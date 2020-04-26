@@ -45,10 +45,10 @@ namespace Windows {
         // C++ style "smart" if-scope operations
 
         [[nodiscard]] inline RwSpinLockScopeExclusive exclusively () noexcept;
-        [[nodiscard]] inline RwSpinLockScopeExclusive exclusively (std::uint32_t timeout) noexcept;
+        [[nodiscard]] inline RwSpinLockScopeExclusive exclusively (std::uint64_t timeout) noexcept;
 
         [[nodiscard]] inline RwSpinLockScopeShared share () noexcept;
-        [[nodiscard]] inline RwSpinLockScopeShared share (std::uint32_t timeout) noexcept;
+        [[nodiscard]] inline RwSpinLockScopeShared share (std::uint64_t timeout) noexcept;
 
     public:
 
@@ -57,8 +57,8 @@ namespace Windows {
         inline void acquire () noexcept { this->AcquireExclusive (); }
         inline void release () noexcept { this->ReleaseExclusive (); }
 
-        [[nodiscard]] inline bool acquire (std::uint32_t timeout) noexcept { return this->AcquireExclusive (timeout); }
-        inline void release (std::uint32_t timeout) noexcept { return this->ReleaseExclusive (); }
+        [[nodiscard]] inline bool acquire (std::uint64_t timeout) noexcept { return this->AcquireExclusive (timeout); }
+        inline void release (std::uint64_t timeout) noexcept { return this->ReleaseExclusive (); }
 
     public:
 
