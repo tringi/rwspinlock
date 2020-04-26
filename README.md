@@ -18,7 +18,7 @@
 
 ## Interface
 
-    [**void**/**bool**] <Try> [Acquire/Release/UpgradeTo/DowngradeTo] [Exclusive/Shared] (<std::uint64_t timeout>)
+    [void/bool] <Try> [Acquire/Release/UpgradeTo/DowngradeTo] [Exclusive/Shared] (<std::uint64_t timeout>)
 
 
 * void AcquireExclusive ()
