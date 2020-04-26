@@ -6,6 +6,12 @@
 * writers don't have priority
 * TBD
 
+## Especially not suitable:
+* for high contention scenarios: *backs off from spinning to eventually Sleep(1) which*
+* for critical sections longer than a few instructions: *use OS primitives instead*
+* where reentrancy is required: *this spin lock will not work at all*
+* where fair locking strategy is required
+
 ## References
 * https://software.intel.com/en-us/articles/implementing-scalable-atomic-locks-for-multi-core-intel-em64t-and-ia32-architectures/
 * TBD
