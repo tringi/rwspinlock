@@ -6,8 +6,8 @@
 * writers don't have priority
 * TBD
 
-## Especially not suitable:
-* for high contention scenarios: *backs off from spinning to eventually Sleep(1) which*
+## Especially NOT suitable:
+* for high contention scenarios: *backs off from spinning to eventually Sleep(1) which sleeps for LONG*
 * for critical sections longer than a few instructions: *use OS primitives instead*
 * where reentrancy is required: *this spin lock will not work at all*
 * where fair locking strategy is required
@@ -17,6 +17,9 @@
 * TBD
 
 ## Interface
+
+    [**void**/**bool**] <Try> [Acquire/Release/UpgradeTo/DowngradeTo] [Exclusive/Shared] (<std::uint64_t timeout>)
+
 
 * void AcquireExclusive ()
 * bool AcquireExclusive (timeout)
