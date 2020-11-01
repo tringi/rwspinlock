@@ -128,7 +128,6 @@ namespace Windows {
 
         // TryUpgradeToExclusive
         //  - attempts to convert shared/reading lock to exclusive/writting
-        //  - call ONLY when holding SINGLE shared lock (after successfull AcquireShared/TryAcquireShared)
         //  - succeeds only if there are no simultaneous readers
         //
         [[nodiscard]] inline bool TryUpgradeToExclusive () noexcept {
