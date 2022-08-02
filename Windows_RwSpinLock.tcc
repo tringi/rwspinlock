@@ -41,7 +41,7 @@ inline void Windows::RwSpinLockScopeShared::release () noexcept {
 
 // RwSpinLock
 
-inline void Windows::RwSpinLock::AcquireExclusive () noexcept {
+inline void Windows::RwSpinLock::AcquireExclusive (std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
     while (!this->TryAcquireExclusive ()) {
         if (++r <= Parameters::Exclusive::Yields) {
@@ -50,9 +50,12 @@ inline void Windows::RwSpinLock::AcquireExclusive () noexcept {
             this->Spin <Parameters::Exclusive> (r);
         }
     }
+    if (rounds) {
+        *rounds = r;
+    }
 }
 
-inline void Windows::RwSpinLock::AcquireShared () noexcept {
+inline void Windows::RwSpinLock::AcquireShared (std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
     while (!this->TryAcquireShared ()) {
         if (++r <= Parameters::Shared::Yields) {
@@ -61,9 +64,12 @@ inline void Windows::RwSpinLock::AcquireShared () noexcept {
             this->Spin <Parameters::Shared> (r);
         }
     }
+    if (rounds) {
+        *rounds = r;
+    }
 }
 
-inline void Windows::RwSpinLock::UpgradeToExclusive () noexcept {
+inline void Windows::RwSpinLock::UpgradeToExclusive (std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
     while (!this->TryUpgradeToExclusive ()) {
         if (++r <= Parameters::Upgrade::Yields) {
@@ -72,9 +78,12 @@ inline void Windows::RwSpinLock::UpgradeToExclusive () noexcept {
             this->Spin <Parameters::Upgrade> (r);
         }
     }
+    if (rounds) {
+        *rounds = r;
+    }
 }
 
-[[nodiscard]] inline bool Windows::RwSpinLock::AcquireExclusive (std::uint64_t timeout) noexcept {
+[[nodiscard]] inline bool Windows::RwSpinLock::AcquireExclusive (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
 
     while (!this->TryAcquireExclusive ()) {
@@ -89,17 +98,24 @@ inline void Windows::RwSpinLock::UpgradeToExclusive () noexcept {
                 while (!this->TryAcquireExclusive ()) {
                     if (GetTickCount64 () < t) {
                         this->Spin <Parameters::Exclusive> (++r);
-                    } else
+                    } else {
+                        if (rounds) {
+                            *rounds = r;
+                        }
                         return false;
+                    }
                 }
             }
             break;
         }
     }
+    if (rounds) {
+        *rounds = r;
+    }
     return true;
 }
 
-[[nodiscard]] inline bool Windows::RwSpinLock::AcquireShared (std::uint64_t timeout) noexcept {
+[[nodiscard]] inline bool Windows::RwSpinLock::AcquireShared (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
 
     while (!this->TryAcquireShared ()) {
@@ -114,17 +130,24 @@ inline void Windows::RwSpinLock::UpgradeToExclusive () noexcept {
                 while (!this->TryAcquireShared ()) {
                     if (GetTickCount64 () < t) {
                         this->Spin <Parameters::Shared> (++r);
-                    } else
+                    } else {
+                        if (rounds) {
+                            *rounds = r;
+                        }
                         return false;
+                    }
                 }
             }
             break;
         }
     }
+    if (rounds) {
+        *rounds = r;
+    }
     return true;
 }
 
-[[nodiscard]] inline bool Windows::RwSpinLock::UpgradeToExclusive (std::uint64_t timeout) noexcept {
+[[nodiscard]] inline bool Windows::RwSpinLock::UpgradeToExclusive (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
 
     while (!this->TryUpgradeToExclusive ()) {
@@ -139,12 +162,19 @@ inline void Windows::RwSpinLock::UpgradeToExclusive () noexcept {
                 while (!this->TryUpgradeToExclusive ()) {
                     if (GetTickCount64 () < t) {
                         this->Spin <Parameters::Upgrade> (++r);
-                    } else
+                    } else {
+                        if (rounds) {
+                            *rounds = r;
+                        }
                         return false;
+                    }
                 }
             }
             break;
         }
+    }
+    if (rounds) {
+        *rounds = r;
     }
     return true;
 }

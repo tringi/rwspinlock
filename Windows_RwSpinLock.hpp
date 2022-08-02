@@ -11,7 +11,7 @@ namespace Windows {
     class RwSpinLockScopeExclusive;
 
     // RwSpinLock
-    //  - slim, cross-process, reader-writer spin lock implementation
+    //  - slim, cross-process, reader-writter spin lock implementation
     //  - writers don't have priority
     //
     class RwSpinLock {
@@ -104,9 +104,9 @@ namespace Windows {
         //  - version with timeout parameter returns true on success and false on timeout
         //  - version without timeout parameter always succeeds or blocks forever (use ForceUnlock to recover)
         //
-        inline void AcquireExclusive () noexcept;
+        inline void AcquireExclusive (std::uint32_t * rounds = nullptr) noexcept;
 
-        [[nodiscard]] inline bool AcquireExclusive (std::uint64_t timeout) noexcept;
+        [[nodiscard]] inline bool AcquireExclusive (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
         // AcquireShared
         //  - acquires the lock for read access (multiple threads in parallel, no writter is allowed)
@@ -115,9 +115,9 @@ namespace Windows {
         //  - version with timeout parameter returns true on success and false on timeout
         //  - version without timeout parameter always succeeds or blocks forever (use ForceUnlock to recover)
         //
-        inline void AcquireShared () noexcept;
+        inline void AcquireShared (std::uint32_t * rounds = nullptr) noexcept;
 
-        [[nodiscard]] inline bool AcquireShared (std::uint64_t timeout) noexcept;
+        [[nodiscard]] inline bool AcquireShared (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
         // ForceUnlock
         //  - use only if the thread/process holding the lock crashed and there is no other reader active
@@ -138,10 +138,11 @@ namespace Windows {
         // UpgradeToExclusive
         //  - converts shared/reading lock to exclusive/writting
         //  - call ONLY when holding SINGLE shared lock (after successfull AcquireShared/TryAcquireShared)
+        //  - NOTE: using this is almost always a BUG; multiple contending callers will deadlock
         //
-        inline void UpgradeToExclusive () noexcept;
+        inline void UpgradeToExclusive (std::uint32_t * rounds = nullptr) noexcept;
 
-        [[nodiscard]] inline bool UpgradeToExclusive (std::uint64_t timeout) noexcept;
+        [[nodiscard]] inline bool UpgradeToExclusive (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
         // DowngradeToShared
         //  - converts exclusive/writting lock to shared/reading (allow others to read, while continuing reading)
@@ -149,6 +150,20 @@ namespace Windows {
         //
         inline void DowngradeToShared () noexcept {
             InterlockedExchange (&this->state, 1);
+        }
+
+        // IsLocked
+        //  - 
+        //
+        inline bool IsLocked () const noexcept {
+            return this->state != 0;
+        }
+
+        // IsLockedExclusively
+        //  - 
+        //
+        inline bool IsLockedExclusively () const noexcept {
+            return this->state == ExclusivelyOwned;
         }
 
     private:
