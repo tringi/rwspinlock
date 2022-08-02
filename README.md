@@ -4,7 +4,11 @@
 ## Features
 * single **long**
 * writers don't have priority
-* TBD
+* automatically unlocking `if` scope guards, see below
+
+## Use cases
+* sharing lots of separate small pieces of data between processes
+* unfair locking of very short pieces of code
 
 ## Especially NOT suitable:
 * for high contention scenarios: *backs off from spinning to eventually Sleep(1) which sleeps for LONG*
@@ -12,40 +16,57 @@
 * where reentrancy is required: *this spin lock will not work at all*
 * where fair locking strategy is required
 
-## References
-* https://software.intel.com/en-us/articles/implementing-scalable-atomic-locks-for-multi-core-intel-em64t-and-ia32-architectures/
-* TBD
+## Requirements
+* Windows Vista (due to use of GetTickCount64 function)
 
 ## Interface
 
-    [void/bool] <Try> [Acquire/Release/UpgradeTo/DowngradeTo] [Exclusive/Shared] (<std::uint64_t timeout>)
+    [void/bool] <Try> [Acquire/Release/UpgradeTo] [Exclusive/Shared] (<std::uint64_t timeout, <std::uint32_t * rounds = nullptr>>)
 
+* all calls are `noexcept`
+* **Try** calls try locking/upgrading exactly once, without spinning
+* **Try** calls and calls with `timeout` return true/false result and are `[[nodiscard]]`
+* the optional output parameter `rounds` will receive number of spins the call waited
 
-* void AcquireExclusive ()
-* bool AcquireExclusive (timeout)
-* void AcquireShared ()
-* bool AcquireShared (timeout)
+### Extra member functions
 
-* void ReleaseExclusive ()
-* void ReleaseShared ()
-* void ForceUnlock () -> ReleaseExclusive ()
+    void acquire () noexcept { AcquireExclusive (); };
+    void release () noexcept { ReleaseExclusive (); };
 
-* bool TryAcquireExclusive 
-* bool TryAcquireExclusive (timeout)
-* bool TryAcquireShared
-* bool TryAcquireShared (timeout)
-* bool TryUpgradeToExclusive ()
-* bool TryUpgradeToExclusive (timeout)
+    void ForceUnlock ();
+    void DowngradeToShared ();
+    bool IsLocked () const;
+    bool IsLockedExclusively () const;
 
-* void UpgradeToExclusive ()
-* bool UpgradeToExclusive (timeout)
-* void DowngradeToShared ()
+## Scope guarding
+*smart `if` pattern*
 
-## Scoped locking
-*smart **if** pattern*
+    if (auto guard = lock.exclusively ()) {
+        // guarded code, now ready for write/exclusive access
+        // lock is released on scope exit
+    }
+    
+    if (auto guard = lock.exclusively (1000)) {
+        // guarded code, now ready for write/exclusive access
+        // lock is released on scope exit
+    } else {
+        // timeout, someone else holds exclusive access
+    }
+    
+    if (auto guard = lock.share ()) {
+        // guarded code, now ready for read/shared access
+        // lock is released on scope exit
+    }
+    
+    if (auto guard = lock.share (1000)) {
+        // guarded code, now ready for read/shared access
+        // lock is released on scope exit
+    } else {
+        // timeout, someone holds exclusive access
+    }
 
-TODO: if (auto guard = lock.exclusively ()) { ... }
-
+## References
+* https://software.intel.com/en-us/articles/implementing-scalable-atomic-locks-for-multi-core-intel-em64t-and-ia32-architectures/
 
 ## Implementation details
 
@@ -56,8 +77,8 @@ TBD: long state
 
 ### Spinning
 
-TBD: YieldProcessor (n times)
-TBD: SwitchToThread
-TBD: Sleep (0)
-TBD: Sleep (1)
-
+* TBD: YieldProcessor (n times)
+* TBD: SwitchToThread
+* TBD: Sleep (0)
+* TBD: Sleep (1)
+* max 127 spins saves 3 bytes on x86
