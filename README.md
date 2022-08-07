@@ -81,11 +81,10 @@ run it with `srw` (SRWLOCK), `cs` (CRITICAL_SECTION) or `spinlock` (RwSpinLock) 
 *best numbers of dozen 10s runs, high performance power scheme*
 
 | Algorithm | AMD Ryzen 5 1600AF | Snapdragon 835 |
-| | Windows 10 LTSB 2016 | Windows 11 build 25163 |
 | :--- | ---: | ---: |
 | CRITICAL_SECTION | 657 965 ops/s | 858 317 ops/s |
 | SRWLOCK | 3 009 137 ops/s | 3 289 008 ops/s |
-| RwSpinLock | 26 736 809 ops/s | 15 797 421 ops/s @ 17% CPU |
+| RwSpinLock | 26 736 809 ops/s | 15 797 421 ops/s |
 
 ## Implementation details
 
