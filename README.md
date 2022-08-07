@@ -3,6 +3,7 @@
 
 ## Features
 * single **long**
+* very simple code
 * writers don't have priority
 * automatically unlocking `if` scope guards, see below
 
@@ -67,6 +68,24 @@
 
 ## References
 * https://software.intel.com/en-us/articles/implementing-scalable-atomic-locks-for-multi-core-intel-em64t-and-ia32-architectures/
+
+## Performance
+There is very crude test program in `Test` directory that measures how many allocate/release
+cycles can simple bitmap allocator do, if every operation is locked. **NOTE:** We are measuring
+the performance difference of the lock, not the allocator.
+
+Compile and change the `bool custom` parameter to choose the algorithm, or download the EXE and
+run it with `srw` (SRWLOCK), `cs` (CRITICAL_SECTION) or `spinlock` (RwSpinLock) parameter.
+
+### Results
+*best numbers of dozen 10s runs, high performance power scheme*
+
+| Algorithm | AMD Ryzen 5 1600AF | Snapdragon 835 |
+| | Windows 10 LTSB 2016 | Windows 11 build 25163 |
+| :--- | ---: | ---: |
+| CRITICAL_SECTION | 657 965 ops/s | 858 317 ops/s |
+| SRWLOCK | 3 009 137 ops/s | 3 289 008 ops/s |
+| RwSpinLock | 26 736 809 ops/s | 15 797 421 ops/s @ 17% CPU |
 
 ## Implementation details
 
