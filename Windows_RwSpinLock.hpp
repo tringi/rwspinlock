@@ -44,11 +44,11 @@ namespace Windows {
 
         // C++ style "smart" if-scope operations
 
-        [[nodiscard]] inline RwSpinLockScopeExclusive exclusively () noexcept;
-        [[nodiscard]] inline RwSpinLockScopeExclusive exclusively (std::uint64_t timeout) noexcept;
+        [[nodiscard]] inline RwSpinLockScopeExclusive exclusively (std::uint32_t * rounds = nullptr) noexcept;
+        [[nodiscard]] inline RwSpinLockScopeExclusive exclusively (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
-        [[nodiscard]] inline RwSpinLockScopeShared share () noexcept;
-        [[nodiscard]] inline RwSpinLockScopeShared share (std::uint64_t timeout) noexcept;
+        [[nodiscard]] inline RwSpinLockScopeShared share (std::uint32_t * rounds = nullptr) noexcept;
+        [[nodiscard]] inline RwSpinLockScopeShared share (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
     public:
 

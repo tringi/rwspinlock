@@ -192,23 +192,23 @@ inline void Windows::RwSpinLock::Spin (std::uint32_t round) {
 
 // if scope
 
-[[nodiscard]] inline Windows::RwSpinLockScopeExclusive Windows::RwSpinLock::exclusively () noexcept {
-    this->AcquireExclusive ();
+[[nodiscard]] inline Windows::RwSpinLockScopeExclusive Windows::RwSpinLock::exclusively (std::uint32_t * rounds) noexcept {
+    this->AcquireExclusive (rounds);
     return this;
 }
-[[nodiscard]] inline Windows::RwSpinLockScopeExclusive Windows::RwSpinLock::exclusively (std::uint64_t timeout) noexcept {
-    if (this->AcquireExclusive (timeout))
+[[nodiscard]] inline Windows::RwSpinLockScopeExclusive Windows::RwSpinLock::exclusively (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
+    if (this->AcquireExclusive (timeout, rounds))
         return this;
     else
         return nullptr;
 }
 
-[[nodiscard]] inline Windows::RwSpinLockScopeShared Windows::RwSpinLock::share () noexcept {
-    this->AcquireShared ();
+[[nodiscard]] inline Windows::RwSpinLockScopeShared Windows::RwSpinLock::share (std::uint32_t * rounds) noexcept {
+    this->AcquireShared (rounds);
     return this;
 }
-[[nodiscard]] inline Windows::RwSpinLockScopeShared Windows::RwSpinLock::share (std::uint64_t timeout) noexcept {
-    if (this->AcquireShared (timeout))
+[[nodiscard]] inline Windows::RwSpinLockScopeShared Windows::RwSpinLock::share (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
+    if (this->AcquireShared (timeout, rounds))
         return this;
     else
         return nullptr;
