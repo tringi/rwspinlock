@@ -74,7 +74,7 @@ There is very crude test program in `Test` directory that measures how many allo
 cycles can simple bitmap allocator do, if every operation is locked. **NOTE:** We are measuring
 the performance difference of the lock, not the allocator.
 
-Compile and change the `bool custom` parameter to choose the algorithm, or download the EXE and
+Compile and change the `algorithm` variable to choose the algorithm, or download the EXE and
 run it with `srw` (SRWLOCK), `cs` (CRITICAL_SECTION) or `spinlock` (RwSpinLock) parameter.
 
 ### Results
@@ -85,6 +85,11 @@ run it with `srw` (SRWLOCK), `cs` (CRITICAL_SECTION) or `spinlock` (RwSpinLock) 
 | CRITICAL_SECTION | 657 965 ops/s | 858 317 ops/s |
 | SRWLOCK | 3 009 137 ops/s | 3 289 008 ops/s |
 | RwSpinLock | 26 736 809 ops/s | 15 797 421 ops/s |
+
+### Notes
+* AMD Ryzen 5 1600AF computer runs Windows 10 LTSB 2016
+* The Qualcomm Snapdragon 835 laptop runs Windows 11 build 25163
+* RwSpinLock seems to be somehow capped at ~17% CPU as indicated by Task Manager, I'm investigating...
 
 ## Implementation details
 
