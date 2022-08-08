@@ -17,12 +17,14 @@ BmAlloc allocator (data, 8 * sizeof (std::intptr_t) * sizeof data / sizeof data 
 enum class algorithm {
     spinlock,
     srw,
-    cs
+    cs,
+    mutex
 } algorithm;
 
 CRITICAL_SECTION cs;
 SRWLOCK srw = SRWLOCK_INIT;
 Windows::RwSpinLock lock;
+HANDLE mutex = CreateMutex (NULL, FALSE, NULL);
 
 int main (int argc, char ** argv) {
     InitializeCriticalSection (&cs);
@@ -33,6 +35,7 @@ int main (int argc, char ** argv) {
         if (std::strcmp (argv [1], "spinlock") == 0) algorithm = algorithm::spinlock;
         if (std::strcmp (argv [1], "srw") == 0) algorithm = algorithm::srw;
         if (std::strcmp (argv [1], "cs") == 0) algorithm = algorithm::cs;
+        if (std::strcmp (argv [1], "mutex") == 0) algorithm = algorithm::mutex;
     }
 
     // create threads
@@ -119,6 +122,15 @@ DWORD WINAPI procedure (LPVOID) {
                     }
                     LeaveCriticalSection (&cs);
                     break;
+                case algorithm::mutex:
+                    WaitForSingleObject (mutex, INFINITE);
+                    if (allocator.acquire (&a [i])) {
+                        ++na;
+                    } else {
+                        std::printf ("%u: ERROR at %u/%u after %llu\n", GetCurrentThreadId (), (unsigned) i, (unsigned) n, na);
+                    }
+                    ReleaseMutex (mutex);
+                    break;
             }
         }
 
@@ -134,17 +146,18 @@ DWORD WINAPI procedure (LPVOID) {
                     break;
                 case algorithm::srw:
                     AcquireSRWLockExclusive (&srw);
-                    if (auto guard = lock.exclusively ()) {
-                        allocator.release (a [i]);
-                    }
+                    allocator.release (a [i]);
                     ReleaseSRWLockExclusive (&srw);
                     break;
                 case algorithm::cs:
                     EnterCriticalSection (&cs);
-                    if (auto guard = lock.exclusively ()) {
-                        allocator.release (a [i]);
-                    }
+                    allocator.release (a [i]);
                     LeaveCriticalSection (&cs);
+                    break;
+                case algorithm::mutex:
+                    WaitForSingleObject (mutex, INFINITE);
+                    allocator.release (a [i]);
+                    ReleaseMutex (mutex);
                     break;
             }
         }

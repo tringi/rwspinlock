@@ -1,11 +1,15 @@
 # R/W Spin Lock
-*slim, cross-process, reader-writer spin lock implementation*
+*slim, simple, fast, cross-process, unfair, reader-writer spin lock implementation*
 
 ## Features
 * single **long**
 * very simple code
 * writers don't have priority
 * automatically unlocking `if` scope guards, see below
+
+## Requirements
+* Windows
+* Microsoft Visual Studio
 
 ## Use cases
 * sharing lots of separate small pieces of data between processes
@@ -74,21 +78,22 @@ There is very crude test program in `Test` directory that measures how many allo
 cycles can simple bitmap allocator do, if every operation is locked. **NOTE:** We are measuring
 the performance difference of the lock, not the allocator.
 
-Compile and change the `algorithm` variable to choose the algorithm, or download the EXE and
-run it with `srw` (SRWLOCK), `cs` (CRITICAL_SECTION) or `spinlock` (RwSpinLock) parameter.
+Compile and change the `algorithm` variable to choose the algorithm, or download the EXE and run it with
+`srw` (SRWLOCK), `cs` (CRITICAL_SECTION), `mutex` (CreateMutex API) or `spinlock` (RwSpinLock) parameter.
 
 ### Results
 *best numbers of dozen 10s runs, high performance power scheme*
 
 | Algorithm | AMD Ryzen 5 1600AF | Snapdragon 835 |
 | :--- | ---: | ---: |
-| CRITICAL_SECTION | 657 965 ops/s | 858 317 ops/s |
-| SRWLOCK | 3 009 137 ops/s | 3 289 008 ops/s |
+| CreateMutex | 78 097 ops/s | 133 852 ops/s |
+| CRITICAL_SECTION | 736 868 ops/s | 924 668 ops/s |
+| SRWLOCK | 3 583 146 ops/s | 4 187 904 ops/s |
 | RwSpinLock | 26 736 809 ops/s | 15 797 421 ops/s |
 
 ### Notes
-* AMD Ryzen 5 1600AF computer runs Windows 10 LTSB 2016
-* The Qualcomm Snapdragon 835 laptop runs Windows 11 build 25163
+* AMD Ryzen 5 1600AF computer runs **Windows 10 LTSB 2016**
+* The Qualcomm Snapdragon 835 laptop runs **Windows 11 22H2 build 25163**
 * RwSpinLock seems to be somehow capped at ~17% CPU as indicated by Task Manager, I'm investigating...
 
 ## Implementation details
