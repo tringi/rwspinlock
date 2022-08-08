@@ -69,7 +69,9 @@ int main (int argc, char ** argv) {
 }
 
 DWORD WINAPI procedure (LPVOID) {
-    auto na = 0uLL;
+    std::uint64_t na = 0uLL;
+    std::uint64_t spins [256] = { 0 };
+
     while (WaitForSingleObject (quit, 0) != WAIT_OBJECT_0) {
 
         // space for allocated indices
@@ -82,15 +84,22 @@ DWORD WINAPI procedure (LPVOID) {
         auto n = 1u + std::rand () % max_a;
         auto i = 0u;
         for (; i != n; ++i) {
+            
+            std::uint32_t rounds = 0u;
             switch (algorithm) {
                 case algorithm::spinlock:
-                    if (auto guard = lock.exclusively ()) {
+                    if (auto guard = lock.exclusively (&rounds)) {
                         if (allocator.acquire (&a [i])) {
                             ++na;
                         } else {
                             std::printf ("%u: ERROR at %u/%u after %llu\n", GetCurrentThreadId (), (unsigned) i, (unsigned) n, na);
                         }
                     }
+                    if (rounds > sizeof spins / sizeof spins [0] - 1) {
+                        rounds = sizeof spins / sizeof spins [0] - 1;
+                    }
+
+                    ++spins [rounds];
                     break;
                 case algorithm::srw:
                     AcquireSRWLockExclusive (&srw);
@@ -116,9 +125,10 @@ DWORD WINAPI procedure (LPVOID) {
         // and release
 
         while (i--) {
+            std::uint32_t rounds = 0u;
             switch (algorithm) {
                 case algorithm::spinlock:
-                    if (auto guard = lock.exclusively ()) {
+                    if (auto guard = lock.exclusively (&rounds)) {
                         allocator.release (a [i]);
                     }
                     break;
@@ -138,29 +148,41 @@ DWORD WINAPI procedure (LPVOID) {
                     break;
             }
         }
-
-        Sleep (0);
     }
     
     // add total number of allocations done, for results
 
-    switch (algorithm) {
-        case algorithm::spinlock:
-            if (auto guard = lock.exclusively ()) {
-                sum += na;
-            }
-            break;
-        case algorithm::srw:
-            AcquireSRWLockExclusive (&srw);
-            sum += na;
-            ReleaseSRWLockExclusive (&srw);
-            break;
-        case algorithm::cs:
-            EnterCriticalSection (&cs);
-            sum += na;
-            LeaveCriticalSection (&cs);
-            break;
+    if (auto guard = lock.exclusively ()) {
+        sum += na;
+
+        switch (algorithm) {
+            default:
+                std::printf ("%6u:%10llu\n", GetCurrentThreadId (), na);
+                break;
+            
+            case algorithm::spinlock:
+                std::uint64_t allspins = 0;
+                std::uint64_t highspins = 0;
+                std::uint64_t totalspins = 0;
+                for (auto i = 1u; i != sizeof spins / sizeof spins [0]; ++i) {
+                    if (spins [i]) {
+                        ++allspins;
+                        totalspins += spins [i];
+                        if (i >= 125) {
+                            highspins += spins [i];
+                        }
+                    }
+                }
+
+                std::printf ("[%6u:%10llu] spins: 0 = %llu, total = %llu, high = %llu, any = %llu (total: %.3f%%, high: %.3f%%, any: %.3f%%)\n",
+                             GetCurrentThreadId (), na,
+                             spins [0], totalspins, highspins, allspins,
+                             totalspins * 100.0 / spins [0],
+                             highspins * 100.0 / spins [0],
+                             allspins * 100.0 / spins [0]);
+                break;
+        }
+        std::printf ("\n");
     }
-    std::printf ("%u ", GetCurrentThreadId ());
     return 0;
 }
