@@ -6,14 +6,16 @@
 #include <cstdint>
 
 namespace Windows {
-    class RwSpinLock;
-    class RwSpinLockScopeShared;
-    class RwSpinLockScopeExclusive;
+    template <typename StateType> class RwSpinLockScopeShared;
+    template <typename StateType> class RwSpinLockScopeExclusive;
 
     // RwSpinLock
-    //  - slim, cross-process, reader-writter spin lock implementation
-    //  - writers don't have priority
+    //  - slim, cross-process, reader-writer spin lock implementation
+    //  - unfair locking, writers don't have priority and can be starved
+    //  - StateType - underlying interlocked counter variable
+    //     - supported: 'short', 'long' or 'long long'
     //
+    template <typename StateType = short>
     class RwSpinLock {
 
         // state
@@ -21,10 +23,10 @@ namespace Windows {
         //  - -1 - owned exclusively (for write/modify operations)
         //  - +1 and above, number of shared readers
         //
-        long state = 0;
+        StateType state = 0;
 
     private:
-        static constexpr long ExclusivelyOwned = -1;
+        static constexpr StateType ExclusivelyOwned = -1;
         struct Parameters { // NOTE: might need additional tuning
             struct Exclusive {
                 static constexpr auto Yields = 125u;
@@ -44,11 +46,11 @@ namespace Windows {
 
         // C++ style "smart" if-scope operations
 
-        [[nodiscard]] inline RwSpinLockScopeExclusive exclusively (std::uint32_t * rounds = nullptr) noexcept;
-        [[nodiscard]] inline RwSpinLockScopeExclusive exclusively (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
+        [[nodiscard]] inline RwSpinLockScopeExclusive <StateType> exclusively (std::uint32_t * rounds = nullptr) noexcept;
+        [[nodiscard]] inline RwSpinLockScopeExclusive <StateType> exclusively (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
-        [[nodiscard]] inline RwSpinLockScopeShared share (std::uint32_t * rounds = nullptr) noexcept;
-        [[nodiscard]] inline RwSpinLockScopeShared share (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
+        [[nodiscard]] inline RwSpinLockScopeShared <StateType> share (std::uint32_t * rounds = nullptr) noexcept;
+        [[nodiscard]] inline RwSpinLockScopeShared <StateType> share (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
     public:
 
@@ -69,7 +71,7 @@ namespace Windows {
         //
         [[nodiscard]] inline bool TryAcquireExclusive () noexcept {
             return this->state == 0
-                && InterlockedCompareExchange (&this->state, ExclusivelyOwned, 0) == 0;
+                && this->LockedCompareExchange (&this->state, ExclusivelyOwned, 0) == 0;
         }
 
         // TryAcquireShared
@@ -78,21 +80,21 @@ namespace Windows {
         [[nodiscard]] inline bool TryAcquireShared () noexcept {
             auto s = this->state;
             return s != ExclusivelyOwned
-                && InterlockedCompareExchange (&this->state, s + 1, s) == s;
+                && this->LockedCompareExchange (&this->state, s + 1, s) == s;
         }
 
         // ReleaseExclusive
         //  - releases all and any locks
         //
         inline void ReleaseExclusive () noexcept {
-            InterlockedExchange (&this->state, 0);
+            this->LockedExchange (&this->state, 0);
         }
 
         // ReleaseShared
         //  - releases one shared/read lock
         //
         inline void ReleaseShared () noexcept {
-            InterlockedDecrement (&this->state);
+            this->LockedDecrement (&this->state);
         }
 
         // AcquireExclusive
@@ -132,7 +134,7 @@ namespace Windows {
         //
         [[nodiscard]] inline bool TryUpgradeToExclusive () noexcept {
             return this->state == 1
-                && InterlockedCompareExchange (&this->state, ExclusivelyOwned, 1) == 1;
+                && this->LockedCompareExchange (&this->state, ExclusivelyOwned, 1) == 1;
         }
 
         // UpgradeToExclusive
@@ -149,7 +151,7 @@ namespace Windows {
         //  - call ONLY when holding exclusive lock, then release using ReleaseShared
         //
         inline void DowngradeToShared () noexcept {
-            InterlockedExchange (&this->state, 1);
+            this->LockedExchange (&this->state, 1);
         }
 
         // IsLocked
@@ -169,16 +171,29 @@ namespace Windows {
     private:
         template <typename Timings>
         inline void Spin (std::uint32_t round);
+
+        inline long long LockedCompareExchange (volatile long long * dst, long long x, long long cmp) noexcept { return InterlockedCompareExchange64 (dst, x, cmp); }
+        inline     short LockedCompareExchange (volatile     short * dst,     short x,     short cmp) noexcept { return InterlockedCompareExchange16 (dst, x, cmp); }
+        inline      long LockedCompareExchange (volatile      long * dst,      long x,      long cmp) noexcept { return InterlockedCompareExchange   (dst, x, cmp); }
+
+        inline long long LockedExchange (volatile long long * dst, long long cmp) noexcept { return InterlockedExchange64 (dst, cmp); }
+        inline     short LockedExchange (volatile     short * dst,     short cmp) noexcept { return InterlockedExchange16 (dst, cmp); }
+        inline      long LockedExchange (volatile      long * dst,      long cmp) noexcept { return InterlockedExchange   (dst, cmp); }
+
+        inline long long LockedDecrement (volatile long long * dst) noexcept { return InterlockedDecrement64 (dst); }
+        inline     short LockedDecrement (volatile     short * dst) noexcept { return InterlockedDecrement16 (dst); }
+        inline      long LockedDecrement (volatile      long * dst) noexcept { return InterlockedDecrement   (dst); }
     };
 
     // RwSpinLockScopeExclusive
     //  - unlocks exlusive lock acquired through RwSpinLock::exclusively
     //
+    template <typename StateType>
     class RwSpinLockScopeExclusive {
-        friend class RwSpinLock;
-        RwSpinLock * lock;
+        friend class RwSpinLock <StateType>;
+        RwSpinLock <StateType> * lock;
 
-        inline RwSpinLockScopeExclusive (RwSpinLock * lock) noexcept : lock (lock) {};
+        inline RwSpinLockScopeExclusive (RwSpinLock <StateType> * lock) noexcept : lock (lock) {};
 
     public:
 
@@ -216,11 +231,12 @@ namespace Windows {
     // RwSpinLockScopeShared
     //  - unlocks exlusive lock acquired through RwSpinLock::shared
     //
+    template <typename StateType>
     class RwSpinLockScopeShared {
-        friend class RwSpinLock;
-        RwSpinLock * lock;
+        friend class RwSpinLock <StateType>;
+        RwSpinLock <StateType> * lock;
 
-        inline RwSpinLockScopeShared (RwSpinLock * lock) noexcept : lock (lock) {};
+        inline RwSpinLockScopeShared (RwSpinLock <StateType> * lock) noexcept : lock (lock) {};
 
     public:
 

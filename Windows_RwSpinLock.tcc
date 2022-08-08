@@ -3,21 +3,26 @@
 
 // RwSpinLockScopeExclusive
 
-inline Windows::RwSpinLockScopeExclusive::~RwSpinLockScopeExclusive () noexcept {
+template <typename StateType>
+inline Windows::RwSpinLockScopeExclusive <StateType>::~RwSpinLockScopeExclusive () noexcept {
     if (this->lock) {
         this->release ();
     }
 }
 
-inline void Windows::RwSpinLockScopeExclusive::release () noexcept {
+template <typename StateType>
+inline void Windows::RwSpinLockScopeExclusive <StateType>::release () noexcept {
     this->lock->ReleaseExclusive ();
     this->lock = nullptr;
 }
 
 // RwSpinLockScopeShared
 
-inline Windows::RwSpinLockScopeShared::RwSpinLockScopeShared (const Windows::RwSpinLockScopeShared & from) noexcept : lock (from.lock) { this->lock->AcquireShared (); }
-inline Windows::RwSpinLockScopeShared & Windows::RwSpinLockScopeShared::operator = (const Windows::RwSpinLockScopeShared & from) noexcept {
+template <typename StateType>
+inline Windows::RwSpinLockScopeShared <StateType>::RwSpinLockScopeShared (const Windows::RwSpinLockScopeShared <StateType> & from) noexcept : lock (from.lock) { this->lock->AcquireShared (); }
+
+template <typename StateType>
+inline Windows::RwSpinLockScopeShared <StateType> & Windows::RwSpinLockScopeShared <StateType>::operator = (const Windows::RwSpinLockScopeShared <StateType> & from) noexcept {
     if (this->lock) {
         this->release ();
     }
@@ -28,20 +33,23 @@ inline Windows::RwSpinLockScopeShared & Windows::RwSpinLockScopeShared::operator
     return *this;
 }
 
-inline Windows::RwSpinLockScopeShared::~RwSpinLockScopeShared () noexcept {
+template <typename StateType>
+inline Windows::RwSpinLockScopeShared <StateType>::~RwSpinLockScopeShared () noexcept {
     if (this->lock) {
         this->release ();
     }
 }
 
-inline void Windows::RwSpinLockScopeShared::release () noexcept {
+template <typename StateType>
+inline void Windows::RwSpinLockScopeShared <StateType>::release () noexcept {
     this->lock->ReleaseShared ();
     this->lock = nullptr;
 }
 
 // RwSpinLock
 
-inline void Windows::RwSpinLock::AcquireExclusive (std::uint32_t * rounds) noexcept {
+template <typename StateType>
+inline void Windows::RwSpinLock <StateType>::AcquireExclusive (std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
     while (!this->TryAcquireExclusive ()) {
         if (++r <= Parameters::Exclusive::Yields) {
@@ -55,7 +63,8 @@ inline void Windows::RwSpinLock::AcquireExclusive (std::uint32_t * rounds) noexc
     }
 }
 
-inline void Windows::RwSpinLock::AcquireShared (std::uint32_t * rounds) noexcept {
+template <typename StateType>
+inline void Windows::RwSpinLock <StateType>::AcquireShared (std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
     while (!this->TryAcquireShared ()) {
         if (++r <= Parameters::Shared::Yields) {
@@ -69,7 +78,8 @@ inline void Windows::RwSpinLock::AcquireShared (std::uint32_t * rounds) noexcept
     }
 }
 
-inline void Windows::RwSpinLock::UpgradeToExclusive (std::uint32_t * rounds) noexcept {
+template <typename StateType>
+inline void Windows::RwSpinLock <StateType>::UpgradeToExclusive (std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
     while (!this->TryUpgradeToExclusive ()) {
         if (++r <= Parameters::Upgrade::Yields) {
@@ -83,7 +93,8 @@ inline void Windows::RwSpinLock::UpgradeToExclusive (std::uint32_t * rounds) noe
     }
 }
 
-[[nodiscard]] inline bool Windows::RwSpinLock::AcquireExclusive (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
+template <typename StateType>
+[[nodiscard]] inline bool Windows::RwSpinLock <StateType>::AcquireExclusive (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
 
     while (!this->TryAcquireExclusive ()) {
@@ -115,7 +126,8 @@ inline void Windows::RwSpinLock::UpgradeToExclusive (std::uint32_t * rounds) noe
     return true;
 }
 
-[[nodiscard]] inline bool Windows::RwSpinLock::AcquireShared (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
+template <typename StateType>
+[[nodiscard]] inline bool Windows::RwSpinLock <StateType>::AcquireShared (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
 
     while (!this->TryAcquireShared ()) {
@@ -147,7 +159,8 @@ inline void Windows::RwSpinLock::UpgradeToExclusive (std::uint32_t * rounds) noe
     return true;
 }
 
-[[nodiscard]] inline bool Windows::RwSpinLock::UpgradeToExclusive (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
+template <typename StateType>
+[[nodiscard]] inline bool Windows::RwSpinLock <StateType>::UpgradeToExclusive (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
 
     while (!this->TryUpgradeToExclusive ()) {
@@ -181,8 +194,9 @@ inline void Windows::RwSpinLock::UpgradeToExclusive (std::uint32_t * rounds) noe
 
 // internals
 
+template <typename StateType>
 template <typename Timings>
-inline void Windows::RwSpinLock::Spin (std::uint32_t round) {
+inline void Windows::RwSpinLock <StateType>::Spin (std::uint32_t round) {
     DWORD n = 0;
     if (round > Timings::Yields + Timings::Sleep0s) {
         n = 1;
@@ -192,22 +206,26 @@ inline void Windows::RwSpinLock::Spin (std::uint32_t round) {
 
 // if scope
 
-[[nodiscard]] inline Windows::RwSpinLockScopeExclusive Windows::RwSpinLock::exclusively (std::uint32_t * rounds) noexcept {
+template <typename StateType>
+[[nodiscard]] inline Windows::RwSpinLockScopeExclusive <StateType> Windows::RwSpinLock <StateType>::exclusively (std::uint32_t * rounds) noexcept {
     this->AcquireExclusive (rounds);
     return this;
 }
-[[nodiscard]] inline Windows::RwSpinLockScopeExclusive Windows::RwSpinLock::exclusively (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
+template <typename StateType>
+[[nodiscard]] inline Windows::RwSpinLockScopeExclusive <StateType> Windows::RwSpinLock <StateType>::exclusively (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
     if (this->AcquireExclusive (timeout, rounds))
         return this;
     else
         return nullptr;
 }
 
-[[nodiscard]] inline Windows::RwSpinLockScopeShared Windows::RwSpinLock::share (std::uint32_t * rounds) noexcept {
+template <typename StateType>
+[[nodiscard]] inline Windows::RwSpinLockScopeShared <StateType> Windows::RwSpinLock <StateType>::share (std::uint32_t * rounds) noexcept {
     this->AcquireShared (rounds);
     return this;
 }
-[[nodiscard]] inline Windows::RwSpinLockScopeShared Windows::RwSpinLock::share (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
+template <typename StateType>
+[[nodiscard]] inline Windows::RwSpinLockScopeShared <StateType> Windows::RwSpinLock <StateType>::share (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
     if (this->AcquireShared (timeout, rounds))
         return this;
     else

@@ -2,14 +2,10 @@
 *slim, simple, fast, cross-process, unfair, reader-writer spin lock implementation*
 
 ## Features
-* single **long**
+* single **short**, **long** or **long long** (templated underlying shared lock counter)
 * very simple code
 * writers don't have priority
 * automatically unlocking `if` scope guards, see below
-
-## Requirements
-* Windows
-* Microsoft Visual Studio
 
 ## Use cases
 * sharing lots of separate small pieces of data between processes
@@ -22,11 +18,12 @@
 * where fair locking strategy is required
 
 ## Requirements
-* Windows Vista (due to use of GetTickCount64 function)
+* **Windows** Vista (due to use of GetTickCount64 function)
+* Microsoft Visual Studio `/std:c++17`
 
 ## Interface
 
-    [void/bool] <Try> [Acquire/Release/UpgradeTo] [Exclusive/Shared] (<std::uint64_t timeout, <std::uint32_t * rounds = nullptr>>)
+    [void/bool] <Try> [Acquire/Release/UpgradeTo] [Exclusive/Shared] (<timeout, <std::uint32_t * rounds = nullptr>>)
 
 * all calls are `noexcept`
 * **Try** calls try locking/upgrading exactly once, without spinning
