@@ -1,17 +1,20 @@
 #include <Windows.h>
 #include <cstdlib>
 #include <cstdio>
+#include <cmath>
 
 #include "BmAlloc.hpp"
 #include "../Windows_RwSpinLock.hpp"
 
-HANDLE quit = CreateEvent (NULL, TRUE, FALSE, NULL);
+volatile bool quit = false;
 HANDLE threads [16] = {}; // change to set number of threads
 
 DWORD WINAPI procedure (LPVOID);
 
 std::uint64_t sum = 0u;
 std::intptr_t data [32];
+std::uint64_t sss [256] = { 0 };
+
 BmAlloc allocator (data, 8 * sizeof (std::intptr_t) * sizeof data / sizeof data [0]);
 
 enum class algorithm {
@@ -59,7 +62,7 @@ int main (int argc, char ** argv) {
 
     // wait for threads to exit
 
-    SetEvent (quit);
+    quit = true;
     Sleep (0);
     for (auto thread : threads) {
         WaitForSingleObject (thread, INFINITE);
@@ -68,6 +71,36 @@ int main (int argc, char ** argv) {
     // result
 
     std::printf ("\nRESULT: %llu/s\n", sum * 1000 / (GetTickCount64 () - t0));
+
+
+    const auto rows = 10;
+    for (auto row = 0; row < rows; ++row) {
+        std::printf ("    ");
+
+        auto m = std::pow (10, rows - row - 1);
+
+        // 0
+        std::printf ("%c", (sss [0] > m) ? '0' : ' ');
+
+        // 1 - 128
+        auto i = 1;
+        for (; i < 124; i += 3) {
+            auto sm = sss [i] + sss [i + 1] + sss [i + 2];
+            std::printf ("%c", (sm > m) ? 'Y' : ' ');
+        }
+
+        // sleeps
+        for (; i < 128; i += 1) {
+            std::printf ("%c", (sss [i] > m) ? 'S' : ' ');
+        }
+
+        // rest
+        for (; i < sizeof sss / sizeof sss [0] - 3; i += 4) {
+            auto sm = sss [i] + sss [i + 1] + sss [i + 2] + sss [i + 3];
+            std::printf ("%c", (sm > m) ? '1' : ' ');
+        }
+        std::printf ("\n");
+    }
     return 0;
 }
 
@@ -75,7 +108,7 @@ DWORD WINAPI procedure (LPVOID) {
     std::uint64_t na = 0uLL;
     std::uint64_t spins [256] = { 0 };
 
-    while (WaitForSingleObject (quit, 0) != WAIT_OBJECT_0) {
+    while (!quit) {
 
         // space for allocated indices
 
@@ -177,7 +210,11 @@ DWORD WINAPI procedure (LPVOID) {
                 std::uint64_t allspins = 0;
                 std::uint64_t highspins = 0;
                 std::uint64_t totalspins = 0;
+
+                sss [0] += spins [0];
                 for (auto i = 1u; i != sizeof spins / sizeof spins [0]; ++i) {
+                    sss [i] += spins [i];
+
                     if (spins [i]) {
                         ++allspins;
                         totalspins += spins [i];
@@ -195,7 +232,6 @@ DWORD WINAPI procedure (LPVOID) {
                              allspins * 100.0 / spins [0]);
                 break;
         }
-        std::printf ("\n");
     }
     return 0;
 }
