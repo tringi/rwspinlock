@@ -81,15 +81,17 @@ Compile and change the `algorithm` variable to choose the algorithm, or download
 ### Results
 *best numbers of dozen 10s runs, high performance power scheme*
 
-| Algorithm | AMD Ryzen 5 1600AF | Snapdragon 835 |
-| :--- | ---: | ---: |
-| CreateMutex | 78 097 ops/s | 133 852 ops/s |
-| CRITICAL_SECTION | 736 868 ops/s | 924 668 ops/s |
-| SRWLOCK | 3 583 146 ops/s | 4 187 904 ops/s |
-| RwSpinLock | 26 736 809 ops/s | 15 797 421 ops/s |
+| Algorithm | AMD Ryzen 5 1600AF | Xeon Phi 7250 | Snapdragon 835 |
+| :--- | ---: | ---: | ---: |
+| CreateMutex | 78 097 ops/s | 26 285 ops/s | 133 852 ops/s |
+| CRITICAL_SECTION | 736 868 ops/s | 277 120 ops/s | 924 668 ops/s |
+| SRWLOCK | 3 583 146 ops/s | 1 310 142 ops/s | 4 187 904 ops/s |
+| **RwSpinLock** | 26 736 809 ops/s | 3 667 361 ops/s | 15 797 421 ops/s |
 
 ### Notes
+* Using 16 threads
 * AMD Ryzen 5 1600AF computer runs **Windows 10 LTSB 2016**
+* Xeon Phi 7250 server runs **Windows Server Insider Preview build 25236**
 * The Qualcomm Snapdragon 835 laptop runs **Windows 11 22H2 build 25163**
 * RwSpinLock seems to be somehow capped at ~17% CPU as indicated by Task Manager, I'm investigating...
 
