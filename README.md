@@ -9,13 +9,13 @@
 
 ## Use cases
 * sharing lots of separate small pieces of data between processes
-* unfair locking of very short pieces of code
+* unfair (see below!) locking of very short pieces of code
 
 ## Especially NOT suitable:
 * for high contention scenarios: *backs off from spinning to eventually Sleep(1) which sleeps for LONG*
 * for critical sections longer than a few instructions: *use OS primitives instead*
 * where reentrancy is required: *this spin lock will not work at all*
-* where fair locking strategy is required
+* where fair locking strategy is required (see below!)
 
 ## Requirements
 * **Windows** Vista (due to use of GetTickCount64 function)
@@ -94,6 +94,18 @@ Compile and change the `algorithm` variable to choose the algorithm, or download
 * Xeon Phi 7250 server runs **Windows Server Insider Preview build 25236**
 * The Qualcomm Snapdragon 835 laptop runs **Windows 11 22H2 build 25163**
 * RwSpinLock seems to be somehow capped at ~17% CPU as indicated by Task Manager, I'm investigating...
+
+### Fairness
+On the Xeon Phi machine above, I've run test with 256 threads competing over 1kB bitmap, comparing how
+many locks each thread managed to aquire. The test run for about 2 minutes.
+The following are ratios between the most and the least successful thread.
+
+| CreateMutex | CRITICAL_SECTION | SRWLOCK | **RwSpinLock** |
+| ---: | ---: | ---: | ---: |
+| 1.25 | 1.15 | 1.09 | 12.84 |
+
+These results show significant unfairness of the RwSpinLock and it's unsuitability for constantly
+highly contended resources.
 
 ## Implementation details
 
