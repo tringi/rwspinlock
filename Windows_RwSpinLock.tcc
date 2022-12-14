@@ -1,6 +1,8 @@
 #ifndef WINDOWS_RWSPINLOCK_TCC
 #define WINDOWS_RWSPINLOCK_TCC
 
+#include "Windows_RwSpinLock.hpp"
+
 // RwSpinLockScopeExclusive
 
 template <typename StateType>
