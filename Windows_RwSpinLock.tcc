@@ -81,21 +81,6 @@ inline void Windows::RwSpinLock <StateType>::AcquireShared (std::uint32_t * roun
 }
 
 template <typename StateType>
-inline void Windows::RwSpinLock <StateType>::UpgradeToExclusive (std::uint32_t * rounds) noexcept {
-    std::uint32_t r = 0;
-    while (!this->TryUpgradeToExclusive ()) {
-        if (++r <= Parameters::Upgrade::Yields) {
-            YieldProcessor ();
-        } else {
-            this->Spin <Parameters::Upgrade> (r);
-        }
-    }
-    if (rounds) {
-        *rounds = r;
-    }
-}
-
-template <typename StateType>
 [[nodiscard]] inline bool Windows::RwSpinLock <StateType>::AcquireExclusive (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
     std::uint32_t r = 0;
 

@@ -140,10 +140,7 @@ namespace Windows {
         // UpgradeToExclusive
         //  - converts shared/reading lock to exclusive/writting
         //  - call ONLY when holding SINGLE shared lock (after successfull AcquireShared/TryAcquireShared)
-        //  - NOTE: using this is almost always a BUG; multiple contending callers will deadlock
         //
-        inline void UpgradeToExclusive (std::uint32_t * rounds = nullptr) noexcept;
-
         [[nodiscard]] inline bool UpgradeToExclusive (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
         // DowngradeToShared
