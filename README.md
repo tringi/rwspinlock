@@ -23,22 +23,54 @@
 
 ## Interface
 
-    [void/bool] <Try> [Acquire/Release/UpgradeTo] [Exclusive/Shared] (<timeout, <std::uint32_t * rounds = nullptr>>)
+    [void/bool] <Try> [Acquire/Release] [Exclusive/Shared] (<timeout, <std::uint32_t * rounds = nullptr>>)
 
 * all calls are `noexcept`
-* **Try** calls try locking/upgrading exactly once, without spinning
-* **Try** calls and calls with `timeout` return true/false result and are `[[nodiscard]]`
-* the optional output parameter `rounds` will receive number of spins the call waited
+* **Try** functions will attempt to lock/upgrade exactly once, without any spinning
+* **Try** functions and functions with `timeout` return true/false result, and are `[[nodiscard]]`
+* the optional output parameter `rounds` will receive the actual number of spins the operation waited
 
-### Extra member functions
+### Maintenance functions
+
+    bool IsLocked () const;
+    bool IsLockedExclusively () const;
+    void ForceUnlock ();
+
+* query functions return immediate state that may have already changed by the time they return
+* force-unlocking the lock WILL end up deadlocking or breaking the program if the lock is still in use
+
+### Upgrade/Downgrade
+
+    bool TryUpgradeToExclusive ();
+    bool UpgradeToExclusive (std::uint64_t timeout, std::uint32_t * rounds = nullptr);
+    void DowngradeToShared ();
+
+* before attempting to upgrade/downgrade the lock must be in state where this action makes logical sense,
+  otherwise the program will deadlock or break
+* there is intentionally no UpgradeToExclusive without timeout; usage of those is always a BUG,
+  use TryUpgradeToExlusive instead
+
+Crude example of proper usage of lock upgrade:
+
+    void DataInsertionProcedure (Item x) {
+        while (true) {
+            lock.AcquireShared ();
+            auto place = FindInsertionPlace (x); // traverse structure to find proper insertion place
+    
+            if (lock.TryUpgradeToExclusive ()) {
+                InsertDataToPlace (place, x); // datamodification operation
+    
+                lock.ReleaseExclusive ();
+                return;
+            }
+            lock.ReleaseShared ();
+        }
+    }
+
+### Additional members to save typing
 
     void acquire () noexcept { AcquireExclusive (); };
     void release () noexcept { ReleaseExclusive (); };
-
-    void ForceUnlock ();
-    void DowngradeToShared ();
-    bool IsLocked () const;
-    bool IsLockedExclusively () const;
 
 ## Scope guarding
 *smart `if` pattern*

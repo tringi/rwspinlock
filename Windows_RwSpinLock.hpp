@@ -152,14 +152,16 @@ namespace Windows {
         }
 
         // IsLocked
-        //  - 
+        //  - returns true if the lock is currently locked, either for shared or exclusive access
+        //  - returns immediate state that may have already changed by the time the call returns
         //
         inline bool IsLocked () const noexcept {
             return this->state != 0;
         }
 
         // IsLockedExclusively
-        //  - 
+        //  - returns true if the lock is currently exclusively locked
+        //  - returns immediate state that may have already changed by the time the call returns
         //
         inline bool IsLockedExclusively () const noexcept {
             return this->state == ExclusivelyOwned;
