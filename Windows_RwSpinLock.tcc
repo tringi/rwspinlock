@@ -18,6 +18,21 @@ inline void Windows::RwSpinLockScopeExclusive <StateType>::release () noexcept {
     this->lock = nullptr;
 }
 
+// RwSpinLockScopeUpgraded
+
+template <typename StateType>
+inline Windows::RwSpinLockScopeUpgraded <StateType>::~RwSpinLockScopeUpgraded () noexcept {
+    if (this->lock) {
+        this->release ();
+    }
+}
+
+template <typename StateType>
+inline void Windows::RwSpinLockScopeUpgraded <StateType>::release () noexcept {
+    this->lock->DowngradeToShared ();
+    this->lock = nullptr;
+}
+
 // RwSpinLockScopeShared
 
 template <typename StateType>
@@ -201,6 +216,21 @@ template <typename StateType>
 template <typename StateType>
 [[nodiscard]] inline Windows::RwSpinLockScopeExclusive <StateType> Windows::RwSpinLock <StateType>::exclusively (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
     if (this->AcquireExclusive (timeout, rounds))
+        return this;
+    else
+        return nullptr;
+}
+
+template <typename StateType>
+[[nodiscard]] inline Windows::RwSpinLockScopeUpgraded <StateType> Windows::RwSpinLock <StateType>::upgrade () noexcept {
+    if (this->TryUpgradeToExclusive ())
+        return this;
+    else
+        return nullptr;
+}
+template <typename StateType>
+[[nodiscard]] inline Windows::RwSpinLockScopeUpgraded <StateType> Windows::RwSpinLock <StateType>::upgrade (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
+    if (this->UpgradeToExclusive (timeout, rounds))
         return this;
     else
         return nullptr;

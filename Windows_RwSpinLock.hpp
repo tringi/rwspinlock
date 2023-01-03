@@ -7,6 +7,7 @@
 
 namespace Windows {
     template <typename StateType> class RwSpinLockScopeShared;
+    template <typename StateType> class RwSpinLockScopeUpgraded;
     template <typename StateType> class RwSpinLockScopeExclusive;
 
     // RwSpinLock
@@ -48,6 +49,9 @@ namespace Windows {
 
         [[nodiscard]] inline RwSpinLockScopeExclusive <StateType> exclusively (std::uint32_t * rounds = nullptr) noexcept;
         [[nodiscard]] inline RwSpinLockScopeExclusive <StateType> exclusively (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
+
+        [[nodiscard]] inline RwSpinLockScopeUpgraded <StateType> upgrade () noexcept;
+        [[nodiscard]] inline RwSpinLockScopeUpgraded <StateType> upgrade (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
         [[nodiscard]] inline RwSpinLockScopeShared <StateType> share (std::uint32_t * rounds = nullptr) noexcept;
         [[nodiscard]] inline RwSpinLockScopeShared <StateType> share (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
@@ -185,7 +189,7 @@ namespace Windows {
     };
 
     // RwSpinLockScopeExclusive
-    //  - unlocks exlusive lock acquired through RwSpinLock::exclusively
+    //  - unlocks exclusive lock acquired through RwSpinLock::exclusively
     //
     template <typename StateType>
     class RwSpinLockScopeExclusive {
@@ -227,8 +231,51 @@ namespace Windows {
 #endif
     };
 
+    // RwSpinLockScopeUpgraded
+    //  - downgrades exclusive lock acquired through RwSpinLock::upgrade
+    //
+    template <typename StateType>
+    class RwSpinLockScopeUpgraded {
+        friend class RwSpinLock <StateType>;
+        RwSpinLock <StateType> * lock;
+
+        inline RwSpinLockScopeUpgraded (RwSpinLock <StateType> * lock) noexcept : lock (lock) {};
+
+    public:
+
+        // movable
+
+        inline RwSpinLockScopeUpgraded (RwSpinLockScopeUpgraded && from) noexcept : lock (from.lock) { from.lock = nullptr; }
+        inline RwSpinLockScopeUpgraded & operator = (RwSpinLockScopeUpgraded && from) noexcept { std::swap (this->lock, from.lock); return *this; }
+
+        // downgrade lock on destruction
+
+        inline ~RwSpinLockScopeUpgraded () noexcept;
+
+        // release
+        //  - to manually release the exclusive lock before going out of scope
+        //  - not checking for null to early catch bugs
+        //
+        inline void release () noexcept;
+
+        // operator bool
+        //  - returns whether the upgraded exclusive lock is still active
+        //  - enables use in 'if' expression to introduce local scope
+        //
+        explicit operator bool () const & {
+            return this->lock != nullptr;
+        }
+
+#ifndef __INTELLISENSE__
+        // operator bool, invalid call
+        //  - using "if (lock.upgrade  ())" is bug -> use "if (auto x = lock.upgrade ())" instead
+        //
+        explicit operator bool () const && = delete;
+#endif
+    };
+
     // RwSpinLockScopeShared
-    //  - unlocks exlusive lock acquired through RwSpinLock::shared
+    //  - unlocks shared lock acquired through RwSpinLock::shared
     //
     template <typename StateType>
     class RwSpinLockScopeShared {
