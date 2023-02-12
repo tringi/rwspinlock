@@ -23,7 +23,9 @@
 
 ## Interface
 
-    [void/bool] <Try> [Acquire/Release] [Exclusive/Shared] (<timeout, <std::uint32_t * rounds = nullptr>>)
+```cpp
+[void/bool] <Try> [Acquire/Release] [Exclusive/Shared] (<timeout, <std::uint32_t * rounds = nullptr>>)
+```
 
 * all calls are `noexcept`
 * **Try** functions will attempt to lock/upgrade exactly once, without any spinning
@@ -32,18 +34,22 @@
 
 ### Maintenance functions
 
-    bool IsLocked () const;
-    bool IsLockedExclusively () const;
-    void ForceUnlock ();
+```cpp
+bool IsLocked () const;
+bool IsLockedExclusively () const;
+void ForceUnlock ();
+```
 
 * query functions return immediate state that may have already changed by the time they return
 * force-unlocking the lock WILL end up deadlocking or breaking the program if the lock is still in use
 
 ### Upgrade/Downgrade
 
-    bool TryUpgradeToExclusive ();
-    bool UpgradeToExclusive (std::uint64_t timeout, std::uint32_t * rounds = nullptr);
-    void DowngradeToShared ();
+```cpp
+bool TryUpgradeToExclusive ();
+bool UpgradeToExclusive (std::uint64_t timeout, std::uint32_t * rounds = nullptr);
+void DowngradeToShared ();
+```
 
 * before attempting to upgrade/downgrade the lock must be in state where this action makes logical sense,
   otherwise the program will deadlock or break
@@ -52,68 +58,78 @@
 
 Crude example of proper usage of lock upgrade:
 
-    void DataInsertionProcedure (Item x) {
-        while (true) {
-            lock.AcquireShared ();
-            auto place = FindInsertionPlace (x); // traverse structure to find proper insertion place
-    
-            if (lock.TryUpgradeToExclusive ()) {
-                InsertDataToPlace (place, x); // datamodification operation
-    
-                lock.ReleaseExclusive ();
-                return;
-            }
-            lock.ReleaseShared ();
+```cpp
+void DataInsertionProcedure (Item x) {
+    while (true) {
+        lock.AcquireShared ();
+        auto place = FindInsertionPlace (x); // traverse structure to find proper insertion place
+
+        if (lock.TryUpgradeToExclusive ()) {
+            InsertDataToPlace (place, x); // datamodification operation
+
+            lock.ReleaseExclusive ();
+            return;
         }
+        lock.ReleaseShared ();
     }
+}
+```
 
 ### Additional members to save typing
 
-    void acquire () noexcept { AcquireExclusive (); };
-    void release () noexcept { ReleaseExclusive (); };
+```cpp
+void acquire () noexcept { AcquireExclusive (); };
+void release () noexcept { ReleaseExclusive (); };
+```
 
 ## Scope guarding
 *smart `if` pattern*
 
 Exclusive/Write locking:
 
-    if (auto guard = lock.exclusively ()) {
-        // guarded code, now ready for write/exclusive access
-        // lock is released on scope exit
-    }
-    
-    if (auto guard = lock.exclusively (1000)) {
-        // guarded code, now ready for write/exclusive access
-        // lock is released on scope exit
-    } else {
-        // timeout, someone else holds exclusive access
-    }
+```cpp
+if (auto guard = lock.exclusively ()) {
+    // guarded code, now ready for write/exclusive access
+    // lock is released on scope exit
+}
+
+if (auto guard = lock.exclusively (1000)) {
+    // guarded code, now ready for write/exclusive access
+    // lock is released on scope exit
+} else {
+    // timeout, someone else holds exclusive access
+}
+```
 
 Shared/Read locking:
     
-    if (auto guard = lock.share ()) {
-        // guarded code, now ready for read/shared access
-        // lock is released on scope exit
-    }
-    
-    if (auto guard = lock.share (1000)) {
-        // guarded code, now ready for read/shared access
-        // lock is released on scope exit
-    } else {
-        // timeout, someone holds exclusive access
-    }
+```cpp
+if (auto guard = lock.share ()) {
+    // guarded code, now ready for read/shared access
+    // lock is released on scope exit
+}
+
+if (auto guard = lock.share (1000)) {
+    // guarded code, now ready for read/shared access
+    // lock is released on scope exit
+} else {
+    // timeout, someone holds exclusive access
+}
+```
 
 Upgrading:
 
-    if (auto guard = lock.share ()) {
-        // read/shared access here
-        if (auto guard2 = lock.upgrade ()) {
-            // upgraded, can perform write/exclusive access here
-        } else {
-            // failed to upgrade, someone else is competing for access
-        }
-        // downgraded back to read/shared access here
+```cpp
+if (auto guard = lock.share ()) {
+    // read/shared access here
+    if (auto guard2 = lock.upgrade ()) {
+        // upgraded, can perform write/exclusive access here
+    } else {
+        // failed to upgrade, someone else is competing for access
     }
+    // downgraded back to read/shared access here
+}
+```
 
 ## References
 * https://software.intel.com/en-us/articles/implementing-scalable-atomic-locks-for-multi-core-intel-em64t-and-ia32-architectures/
