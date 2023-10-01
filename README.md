@@ -158,7 +158,7 @@ Compile and change the `algorithm` variable to choose the algorithm, or download
 * Both AMD Ryzens run on **Windows 10 LTSB 2016**
 * Xeon Phi 7250 server runs **Windows Server Insider Preview build 25236**
 * The Qualcomm Snapdragon 835 laptop runs **Windows 11 22H2 build 25163**
-* RwSpinLock seems to be somehow capped at ~17% CPU as indicated by Task Manager, I'm investigating...
+* L2 synchronization bandwidth makes RwSpinLock to appear capped at low percent CPU usage indicated by Task Manager
 
 ### Fairness
 On the Xeon Phi machine above, I've run test with 256 threads competing over 1kB bitmap, comparing how
