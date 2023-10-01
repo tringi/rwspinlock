@@ -2,20 +2,21 @@
 *slim, simple, fast, cross-process, unfair, reader-writer spin lock implementation*
 
 ## Features
-* single **short**, **long** or **long long** (templated underlying shared lock counter)
+* size of a single `short`, `long` or `long long` (templated underlying shared lock counter)
 * very simple code
 * writers don't have priority
-* automatically unlocking `if` scope guards, see below
+* automatically unlocking smart `if` scope guards, see below [Scope guarding](#scope-guarding)
+* is inlined yielding additional performance
 
 ## Use cases
 * sharing lots of separate small pieces of data between processes
-* unfair (see below!) locking of very short pieces of code
+* unfair (see below!) locking of very short routines
 
-## Especially NOT suitable:
+## Not very suitable
 * for high contention scenarios: *backs off from spinning to eventually Sleep(1) which sleeps for LONG*
-* for critical sections longer than a few instructions: *use OS primitives instead*
+* for critical sections longer than a few instructions or containing API calls: *suggest use OS primitives instead*
 * where reentrancy is required: *this spin lock will not work at all*
-* where fair locking strategy is required (see below!)
+* where fair locking strategy is required, see below [Fairness](#fairness)
 
 ## Requirements
 * **Windows** Vista (due to use of GetTickCount64 function)
@@ -157,10 +158,10 @@ highly contended resources.
 
 ## Implementation details
 
-TBD: long state
- - 0 - unowned
- - -1 - owned exclusively (for write/modify operations)
- - +1 and above, number of shared readers
+### State variable values
+* 0 - unowned/unlocked
+* -1 - owned exclusively, for write/modify operations
+* +1 and any positive value - number of active shared readers
 
 ### Spinning
 
