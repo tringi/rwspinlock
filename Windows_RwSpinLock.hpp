@@ -225,7 +225,7 @@ namespace Windows {
 
 #ifndef __INTELLISENSE__
         // operator bool, invalid call
-        //  - using "if (lock.exclusive ())" is bug -> use "if (auto x = lock.exclusive ())" instead
+        //  - using "if (lock.exclusively ())" is bug -> use "if (auto x = lock.exclusively ())" instead
         //
         explicit operator bool () const && = delete;
 #endif
@@ -316,7 +316,7 @@ namespace Windows {
 
 #ifndef __INTELLISENSE__
         // operator bool, invalid call
-        //  - using "if (lock.shared ())" is bug -> use "if (auto x = lock.shared ())" instead
+        //  - using "if (lock.share ())" is bug -> use "if (auto x = lock.share ())" instead
         //
         explicit operator bool () const && = delete;
 #endif
