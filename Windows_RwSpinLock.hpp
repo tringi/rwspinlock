@@ -82,7 +82,7 @@ namespace Windows {
         //  - attempts to acquire shared/read lock, returns result
         //
         [[nodiscard]] inline bool TryAcquireShared () noexcept {
-            auto s = this->state;
+            auto s = *static_cast <volatile StateType *> (&this->state); // ReadNoFence
             return s != ExclusivelyOwned
                 && this->LockedCompareExchange (&this->state, s + 1, s) == s;
         }
