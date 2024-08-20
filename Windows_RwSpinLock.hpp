@@ -9,7 +9,7 @@ namespace Windows {
     template <typename StateType> class RwSpinLockScopeShared;
     template <typename StateType> class RwSpinLockScopeUpgraded;
     template <typename StateType> class RwSpinLockScopeExclusive;
-
+    
     // RwSpinLock
     //  - slim, cross-process, reader-writer spin lock implementation
     //  - unfair locking, writers don't have priority and can be starved
@@ -50,7 +50,7 @@ namespace Windows {
         [[nodiscard]] inline RwSpinLockScopeExclusive <StateType> exclusively (std::uint32_t * rounds = nullptr) noexcept;
         [[nodiscard]] inline RwSpinLockScopeExclusive <StateType> exclusively (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
-        [[nodiscard]] inline RwSpinLockScopeUpgraded <StateType> upgrade () noexcept;
+        [[nodiscard]] inline RwSpinLockScopeUpgraded <StateType> upgrade (std::uint32_t * rounds = nullptr) noexcept;
         [[nodiscard]] inline RwSpinLockScopeUpgraded <StateType> upgrade (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
         [[nodiscard]] inline RwSpinLockScopeShared <StateType> share (std::uint32_t * rounds = nullptr) noexcept;
