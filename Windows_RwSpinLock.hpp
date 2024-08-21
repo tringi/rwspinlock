@@ -52,9 +52,6 @@ namespace Windows {
         [[nodiscard]] inline RwSpinLockScopeExclusive <StateType> exclusively (std::uint32_t * rounds = nullptr) noexcept;
         [[nodiscard]] inline RwSpinLockScopeExclusive <StateType> exclusively (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
-        [[nodiscard]] inline RwSpinLockScopeUpgraded <StateType> upgrade (std::uint32_t * rounds = nullptr) noexcept;
-        [[nodiscard]] inline RwSpinLockScopeUpgraded <StateType> upgrade (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
-
         [[nodiscard]] inline RwSpinLockScopeShared <StateType> share (std::uint32_t * rounds = nullptr) noexcept;
         [[nodiscard]] inline RwSpinLockScopeShared <StateType> share (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
 
@@ -316,6 +313,13 @@ namespace Windows {
 
         inline ~RwSpinLockScopeShared () noexcept;
 
+        // upgrade
+        //  - introduces a scope (C++ style "smart" if-scope pattern) where the shared lock is upgraded to exclusive
+        //  - NOTE: both of these functions are likely to fail, and the failure must be handled properly (see REAMDE.md)
+        //
+        [[nodiscard]] inline RwSpinLockScopeUpgraded <StateType> upgrade (std::uint32_t * rounds = nullptr) noexcept;
+        [[nodiscard]] inline RwSpinLockScopeUpgraded <StateType> upgrade (std::uint64_t timeout, std::uint32_t * rounds = nullptr) noexcept;
+
         // release
         //  - to manually release the exclusive lock before going out of scope
         //  - not checking for null to early catch bugs
@@ -346,7 +350,7 @@ namespace Windows {
     };
 
     // RwSpinLockScopeExclusiveUnlocked
-    //  - 
+    //  - scope guard for temporarily-unlocked scope inside of exclusively-locked scope
     //
     template <typename StateType>
     class RwSpinLockScopeExclusiveUnlocked {
@@ -389,7 +393,7 @@ namespace Windows {
     };
 
     // RwSpinLockScopeSharedUnlocked
-    //  - 
+    //  - scope guard for temporarily-unlocked scope inside of shared-locked scope
     //
     template <typename StateType>
     class RwSpinLockScopeSharedUnlocked {

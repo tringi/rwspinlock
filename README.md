@@ -123,7 +123,7 @@ Upgrading:
 ```cpp
 if (auto guard = lock.share ()) {
     // read/shared access here
-    if (auto guard2 = lock.upgrade ()) {
+    if (auto guard2 = guard.upgrade ()) {
         // upgraded, can perform write/exclusive access here
     } else {
         // failed to upgrade, someone else is competing for access

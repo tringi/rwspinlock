@@ -222,7 +222,9 @@ template <typename StateType>
 }
 
 template <typename StateType>
-[[nodiscard]] inline Windows::RwSpinLockScopeUpgraded <StateType> Windows::RwSpinLock <StateType>::upgrade (std::uint32_t * rounds) noexcept {
+[[nodiscard]] inline
+Windows::RwSpinLockScopeUpgraded <StateType>
+Windows::RwSpinLockScopeShared <StateType>::upgrade (std::uint32_t * rounds) noexcept {
     if (this->TryUpgradeToExclusive ()) {
         if (rounds) {
             *rounds = 0;
@@ -232,7 +234,9 @@ template <typename StateType>
         return nullptr;
 }
 template <typename StateType>
-[[nodiscard]] inline Windows::RwSpinLockScopeUpgraded <StateType> Windows::RwSpinLock <StateType>::upgrade (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
+[[nodiscard]] inline
+Windows::RwSpinLockScopeUpgraded <StateType>
+Windows::RwSpinLockScopeShared <StateType>::upgrade (std::uint64_t timeout, std::uint32_t * rounds) noexcept {
     if (this->UpgradeToExclusive (timeout, rounds))
         return this;
     else
