@@ -9,7 +9,9 @@ namespace Windows {
     template <typename StateType> class RwSpinLockScopeShared;
     template <typename StateType> class RwSpinLockScopeUpgraded;
     template <typename StateType> class RwSpinLockScopeExclusive;
-    
+    template <typename StateType> class RwSpinLockScopeSharedUnlocked;
+    template <typename StateType> class RwSpinLockScopeExclusiveUnlocked;
+
     // RwSpinLock
     //  - slim, cross-process, reader-writer spin lock implementation
     //  - unfair locking, writers don't have priority and can be starved
@@ -215,6 +217,13 @@ namespace Windows {
         //
         inline void release () noexcept;
 
+        // temporarily_unlock
+        //  - introduced a scope (smart if pattern) where the exclusively locked lock is unlocked
+        //  - the destructor of the returned scope object restores the exclusive lock and optionally writes 'round'
+        //  - NOTE: 'rounds' is set AFTER the scope guard goes out of scope
+        //
+        [[nodiscard]] inline RwSpinLockScopeExclusiveUnlocked <StateType> temporarily_unlock (std::uint32_t * rounds = nullptr) noexcept;
+
         // operator bool
         //  - returns whether the exclusive lock is still active
         //  - enables use in 'if' expression to introduce local scope
@@ -257,6 +266,13 @@ namespace Windows {
         //  - not checking for null to early catch bugs
         //
         inline void release () noexcept;
+
+        // temporarily_unlock
+        //  - introduced a scope (smart if pattern) where the upgraded, exclusively locked, lock is unlocked
+        //  - the destructor of the returned scope object restores the exclusive lock and optionally writes 'round'
+        //  - NOTE: 'rounds' is set AFTER the scope guard goes out of scope
+        //
+        [[nodiscard]] inline RwSpinLockScopeExclusiveUnlocked <StateType> temporarily_unlock (std::uint32_t * rounds = nullptr) noexcept;
 
         // operator bool
         //  - returns whether the upgraded exclusive lock is still active
@@ -306,6 +322,13 @@ namespace Windows {
         //
         inline void release () noexcept;
 
+        // temporarily_unlock
+        //  - introduced a scope (smart if pattern) where the shared lock count is decremented
+        //  - the destructor of the returned scope object re-locks for shared access and optionally writes 'round'
+        //  - NOTE: 'rounds' is set AFTER the scope guard goes out of scope
+        //
+        [[nodiscard]] inline RwSpinLockScopeSharedUnlocked <StateType> temporarily_unlock (std::uint32_t * rounds = nullptr) noexcept;
+
         // operator bool
         //  - returns whether the lock is still active
         //  - enables use in 'if' expression to introduce local scope
@@ -317,6 +340,92 @@ namespace Windows {
 #ifndef __INTELLISENSE__
         // operator bool, invalid call
         //  - using "if (lock.share ())" is bug -> use "if (auto x = lock.share ())" instead
+        //
+        explicit operator bool () const && = delete;
+#endif
+    };
+
+    // RwSpinLockScopeExclusiveUnlocked
+    //  - 
+    //
+    template <typename StateType>
+    class RwSpinLockScopeExclusiveUnlocked {
+        friend class RwSpinLock <StateType>;
+
+        RwSpinLock <StateType> * lock;
+        std::uint32_t * rounds;
+
+        inline RwSpinLockScopeExclusiveUnlocked (RwSpinLock <StateType> * lock, std::uint32_t * rounds) noexcept : lock (lock), rounds (rounds) {};
+
+    public:
+
+        // movable
+
+        inline RwSpinLockScopeExclusiveUnlocked (RwSpinLockScopeExclusiveUnlocked && from) noexcept;
+        inline RwSpinLockScopeExclusiveUnlocked & operator = (RwSpinLockScopeExclusiveUnlocked && from) noexcept;
+
+        // restore exclusive lock on destruction
+
+        inline ~RwSpinLockScopeExclusiveUnlocked () noexcept;
+
+        // restore
+        //  - to manually restore the exclusive lock to locked state before going out of scope
+        //
+        inline void restore () noexcept;
+
+        // operator bool
+        //  - enables use in 'if' expression to introduce local scope
+        //
+        explicit operator bool () const & {
+            return true;
+        }
+
+#ifndef __INTELLISENSE__
+        // operator bool, invalid call
+        //  - using "if (lock.temporarily_unlock ())" is bug -> use "if (auto x = lock.temporarily_unlock ())" instead
+        //
+        explicit operator bool () const && = delete;
+#endif
+    };
+
+    // RwSpinLockScopeSharedUnlocked
+    //  - 
+    //
+    template <typename StateType>
+    class RwSpinLockScopeSharedUnlocked {
+        friend class RwSpinLock <StateType>;
+
+        RwSpinLock <StateType> * lock;
+        std::uint32_t * rounds;
+
+        inline RwSpinLockScopeSharedUnlocked (RwSpinLock <StateType> * lock, std::uint32_t * rounds) noexcept : lock (lock), rounds (rounds) {};
+
+    public:
+
+        // movable
+
+        inline RwSpinLockScopeSharedUnlocked (RwSpinLockScopeSharedUnlocked && from) noexcept;
+        inline RwSpinLockScopeSharedUnlocked & operator = (RwSpinLockScopeSharedUnlocked && from) noexcept;
+
+        // restore/re-increments shared lock on destruction
+
+        inline ~RwSpinLockScopeSharedUnlocked () noexcept;
+
+        // restore
+        //  - to manually restore/re-increment the shared lock before going out of scope
+        //
+        inline void restore () noexcept;
+
+        // operator bool
+        //  - enables use in 'if' expression to introduce local scope
+        //
+        explicit operator bool () const & {
+            return true;
+        }
+
+#ifndef __INTELLISENSE__
+        // operator bool, invalid call
+        //  - using "if (lock.temporarily_unlock ())" is bug -> use "if (auto x = lock.temporarily_unlock ())" instead
         //
         explicit operator bool () const && = delete;
 #endif

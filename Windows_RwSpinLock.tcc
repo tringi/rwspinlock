@@ -252,4 +252,94 @@ template <typename StateType>
         return nullptr;
 }
 
+// RwSpinLockScopeExclusiveUnlocked
+
+template <typename StateType>
+[[nodiscard]] inline
+Windows::RwSpinLockScopeExclusiveUnlocked <StateType>
+Windows::RwSpinLockScopeExclusive <StateType>::temporarily_unlock (std::uint32_t * rounds) noexcept {
+    this->lock->ReleaseExclusive ();
+    return { this->lock, rounds };
+}
+
+template <typename StateType>
+[[nodiscard]] inline
+Windows::RwSpinLockScopeExclusiveUnlocked <StateType>
+Windows::RwSpinLockScopeUpgraded <StateType>::temporarily_unlock (std::uint32_t * rounds) noexcept {
+    this->lock->ReleaseExclusive ();
+    return { this->lock, rounds };
+}
+
+template <typename StateType>
+inline Windows::RwSpinLockScopeExclusiveUnlocked <StateType>::RwSpinLockScopeExclusiveUnlocked (RwSpinLockScopeExclusiveUnlocked && from) noexcept
+    : lock (from.lock)
+    , rounds (from.rounds) {
+
+    from.lock = nullptr;
+    from.rounds = nullptr;
+}
+
+template <typename StateType>
+inline
+Windows::RwSpinLockScopeExclusiveUnlocked <StateType> &
+Windows::RwSpinLockScopeExclusiveUnlocked <StateType>::operator = (RwSpinLockScopeExclusiveUnlocked && from) noexcept {
+    std::swap (this->lock, from.lock);
+    std::swap (this->rounds, from.rounds);
+    return *this;
+}
+
+template <typename StateType>
+inline Windows::RwSpinLockScopeExclusiveUnlocked <StateType>::~RwSpinLockScopeExclusiveUnlocked () noexcept {
+    if (this->lock) {
+        this->restore ();
+    }
+}
+
+template <typename StateType>
+inline void Windows::RwSpinLockScopeExclusiveUnlocked <StateType>::restore () noexcept {
+    this->lock->AcquireExclusive (this->rounds);
+    this->lock = nullptr;
+}
+
+// RwSpinLockScopeSharedUnlocked
+
+template <typename StateType>
+[[nodiscard]] inline
+Windows::RwSpinLockScopeSharedUnlocked <StateType>
+Windows::RwSpinLockScopeShared <StateType>::temporarily_unlock (std::uint32_t * rounds) noexcept {
+    this->lock->ReleaseShared ();
+    return { this->lock, rounds };
+}
+
+template <typename StateType>
+inline Windows::RwSpinLockScopeSharedUnlocked <StateType>::RwSpinLockScopeSharedUnlocked (RwSpinLockScopeSharedUnlocked && from) noexcept
+    : lock (from.lock)
+    , rounds (from.rounds) {
+
+    from.lock = nullptr;
+    from.rounds = nullptr;
+}
+
+template <typename StateType>
+inline
+Windows::RwSpinLockScopeSharedUnlocked <StateType> &
+Windows::RwSpinLockScopeSharedUnlocked <StateType>::operator = (RwSpinLockScopeSharedUnlocked && from) noexcept {
+    std::swap (this->lock, from.lock);
+    std::swap (this->rounds, from.rounds);
+    return *this;
+}
+
+template <typename StateType>
+inline Windows::RwSpinLockScopeSharedUnlocked <StateType>::~RwSpinLockScopeSharedUnlocked () noexcept {
+    if (this->lock) {
+        this->restore ();
+    }
+}
+
+template <typename StateType>
+inline void Windows::RwSpinLockScopeSharedUnlocked <StateType>::restore () noexcept {
+    this->lock->AcquireShared (this->rounds);
+    this->lock = nullptr;
+}
+
 #endif
