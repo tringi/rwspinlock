@@ -215,7 +215,7 @@ namespace Windows {
         inline void release () noexcept;
 
         // temporarily_unlock
-        //  - introduced a scope (smart if pattern) where the exclusively locked lock is unlocked
+        //  - introduces a scope (smart if pattern) where the exclusively locked lock is unlocked
         //  - the destructor of the returned scope object restores the exclusive lock and optionally writes 'round'
         //  - NOTE: 'rounds' is set AFTER the scope guard goes out of scope
         //
@@ -265,7 +265,7 @@ namespace Windows {
         inline void release () noexcept;
 
         // temporarily_unlock
-        //  - introduced a scope (smart if pattern) where the upgraded, exclusively locked, lock is unlocked
+        //  - introduces a scope (smart if pattern) where the upgraded, exclusively locked, lock is unlocked
         //  - the destructor of the returned scope object restores the exclusive lock and optionally writes 'round'
         //  - NOTE: 'rounds' is set AFTER the scope guard goes out of scope
         //
@@ -327,7 +327,7 @@ namespace Windows {
         inline void release () noexcept;
 
         // temporarily_unlock
-        //  - introduced a scope (smart if pattern) where the shared lock count is decremented
+        //  - introduces a scope (smart if pattern) where the shared lock count is decremented
         //  - the destructor of the returned scope object re-locks for shared access and optionally writes 'round'
         //  - NOTE: 'rounds' is set AFTER the scope guard goes out of scope
         //
