@@ -133,7 +133,7 @@ if (auto guard = lock.share ()) {
 ```
 
 ## References
-* https://software.intel.com/en-us/articles/implementing-scalable-atomic-locks-for-multi-core-intel-em64t-and-ia32-architectures/
+* https://web.archive.org/web/20090722064646/http://software.intel.com/en-us/articles/implementing-scalable-atomic-locks-for-multi-core-intel-em64t-and-ia32-architectures/
 
 ## Performance
 There is very crude test program in `Test` directory that measures how many allocate/release
